@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSession, signOut } from '@/lib/auth-client';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -13,7 +13,7 @@ import type { Category } from '@/lib/types';
 import { useState } from 'react';
 
 export default function ProfilePage() {
-  const { data: session, isPending } = useSession();
+  const { user, loading: isPending, logout } = useAuth();
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
 
@@ -22,15 +22,19 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
-    if (!isPending && !session) {
+    if (!isPending && !user) {
       router.push('/signin?redirect=/profile&reason=protected');
     }
-  }, [session, isPending, router]);
+  }, [user, isPending, router]);
 
   const handleSignOut = async () => {
-    await signOut();
-    toast.success('সাইন আউট হয়েছেন');
-    router.push('/');
+    try {
+      await logout();
+      toast.success('সাইন আউট হয়েছেন');
+      router.push('/');
+    } catch {
+      toast.error('সাইন আউট ব্যর্থ হয়েছে');
+    }
   };
 
   if (isPending) {
@@ -41,9 +45,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!session) return null;
-
-  const user = session.user;
+  if (!user) return null;
 
   return (
     <>
@@ -54,20 +56,20 @@ export default function ProfilePage() {
         <div className="bg-white rounded-2xl border border-green-100 shadow-sm p-8 space-y-6">
           {/* Avatar */}
           <div className="flex items-center gap-5">
-            {user.image ? (
+            {user.photoURL ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={user.image}
-                alt={user.name}
+                src={user.photoURL}
+                alt={user.displayName || user.email || ''}
                 className="w-20 h-20 rounded-2xl object-cover shadow-md"
               />
             ) : (
               <div className="w-20 h-20 rounded-2xl bg-green-600 flex items-center justify-center text-white text-3xl font-bold shadow-md">
-                {user.name?.charAt(0).toUpperCase()}
+                {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
               </div>
             )}
             <div>
-              <h2 className="text-xl font-bold text-gray-900">{user.name}</h2>
+              <h2 className="text-xl font-bold text-gray-900">{user.displayName || user.email?.split('@')[0]}</h2>
               <p className="text-gray-400 text-sm">{user.email}</p>
             </div>
           </div>
@@ -77,7 +79,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3 text-gray-700">
               <User className="w-4 h-4 text-gray-400" />
               <span className="text-sm font-medium text-gray-500 w-20">নাম:</span>
-              <span className="text-sm">{user.name}</span>
+              <span className="text-sm">{user.displayName || 'নির্ধারিত হয়নি'}</span>
             </div>
             <div className="flex items-center gap-3 text-gray-700">
               <Mail className="w-4 h-4 text-gray-400" />

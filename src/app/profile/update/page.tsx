@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession, authClient } from '@/lib/auth-client';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -12,7 +12,7 @@ import { fetchCategories } from '@/lib/types';
 import type { Category } from '@/lib/types';
 
 export default function UpdateProfilePage() {
-  const { data: session, isPending } = useSession();
+  const { user, loading: isPending, updateUserName } = useAuth();
   const router = useRouter();
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,13 +23,13 @@ export default function UpdateProfilePage() {
   }, []);
 
   useEffect(() => {
-    if (!isPending && !session) {
+    if (!isPending && !user) {
       router.push('/signin?redirect=/profile/update&reason=protected');
     }
-    if (session?.user?.name) {
-      setName(session.user.name);
+    if (user?.displayName) {
+      setName(user.displayName);
     }
-  }, [session, isPending, router]);
+  }, [user, isPending, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,17 +39,12 @@ export default function UpdateProfilePage() {
     }
     setLoading(true);
     try {
-      // BetterAuth update user
-      const result = await authClient.updateUser({ name: name.trim() });
-      if (result.error) {
-        toast.error(result.error.message || 'আপডেট ব্যর্থ হয়েছে');
-      } else {
-        toast.success('তথ্য সফলভাবে আপডেট হয়েছে! ✅');
-        router.push('/profile');
-        router.refresh();
-      }
+      await updateUserName(name.trim());
+      toast.success('তথ্য সফলভাবে আপডেট হয়েছে! ✅');
+      router.push('/profile');
+      router.refresh();
     } catch {
-      toast.error('একটি সমস্যা হয়েছে');
+      toast.error('তথ্য আপডেট ব্যর্থ হয়েছে');
     } finally {
       setLoading(false);
     }
@@ -63,7 +58,7 @@ export default function UpdateProfilePage() {
     );
   }
 
-  if (!session) return null;
+  if (!user) return null;
 
   return (
     <>
@@ -103,7 +98,7 @@ export default function UpdateProfilePage() {
               </label>
               <input
                 type="email"
-                value={session.user.email}
+                value={user.email || ''}
                 readOnly
                 className="w-full px-4 py-3 border border-gray-100 rounded-xl bg-gray-50 text-sm text-gray-400 cursor-not-allowed"
               />

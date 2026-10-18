@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signUp, signIn } from '@/lib/auth-client';
+import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, UserPlus, ShoppingCart } from 'lucide-react';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { registerWithEmail, loginWithGoogle, loginWithGithub } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,25 +22,26 @@ export default function SignUpPage() {
       toast.error('সব তথ্য পূরণ করুন');
       return;
     }
-    if (password.length < 8) {
-      toast.error('পাসওয়ার্ড কমপক্ষে ৮ অক্ষর হতে হবে');
+    if (password.length < 6) {
+      toast.error('পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে');
       return;
     }
     setLoading(true);
     try {
-      const result = await signUp.email({
-        name,
-        email,
-        password,
-      });
-      if (result.error) {
-        toast.error(result.error.message || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে');
+      await registerWithEmail(email, password, name);
+      toast.success('সফলভাবে রেজিস্ট্রেশন হয়েছে! 🎉');
+      router.push('/signin');
+    } catch (err: any) {
+      const code = err?.code;
+      if (code === 'auth/email-already-in-use') {
+        toast.error('এই ইমেইল দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট রয়েছে');
+      } else if (code === 'auth/weak-password') {
+        toast.error('পাসওয়ার্ড আরও শক্তিশালী করুন (কমপক্ষে ৬ অক্ষর)');
+      } else if (code === 'auth/invalid-email') {
+        toast.error('সঠিক ইমেইল লিখুন');
       } else {
-        toast.success('সফলভাবে রেজিস্ট্রেশন হয়েছে! 🎉');
-        router.push('/signin');
+        toast.error(err?.message || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে, আবার চেষ্টা করুন');
       }
-    } catch {
-      toast.error('একটি সমস্যা হয়েছে, আবার চেষ্টা করুন');
     } finally {
       setLoading(false);
     }
@@ -47,17 +49,27 @@ export default function SignUpPage() {
 
   const handleGoogleSignIn = async () => {
     try {
-      await signIn.social({ provider: 'google', callbackURL: '/' });
-    } catch {
-      toast.error('Google লগইন ব্যর্থ হয়েছে');
+      await loginWithGoogle();
+      toast.success('Google দিয়ে লগইন সফল হয়েছে! 🎉');
+      router.push('/');
+      router.refresh();
+    } catch (err: any) {
+      if (err?.code !== 'auth/popup-closed-by-user') {
+        toast.error('Google লগইন ব্যর্থ হয়েছে');
+      }
     }
   };
 
   const handleGithubSignIn = async () => {
     try {
-      await signIn.social({ provider: 'github', callbackURL: '/' });
-    } catch {
-      toast.error('GitHub লগইন ব্যর্থ হয়েছে');
+      await loginWithGithub();
+      toast.success('GitHub দিয়ে লগইন সফল হয়েছে! 🎉');
+      router.push('/');
+      router.refresh();
+    } catch (err: any) {
+      if (err?.code !== 'auth/popup-closed-by-user') {
+        toast.error('GitHub লগইন ব্যর্থ হয়েছে');
+      }
     }
   };
 

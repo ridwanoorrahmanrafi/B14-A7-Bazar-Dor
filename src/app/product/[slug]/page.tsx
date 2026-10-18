@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { fetchProductBySlug, fetchCategories, calcMarketStats, formatPrice, getUnitLabel } from '@/lib/types';
 import Navbar from '@/components/Navbar';
@@ -16,10 +16,22 @@ interface Props {
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
 
-  // Auth check — protected route
-  const headersList = await headers();
-  const session = await auth.api.getSession({ headers: headersList });
-  if (!session) {
+  // Auth check — protected route (supports Firebase auth cookie + BetterAuth session)
+  const cookieStore = await cookies();
+  const firebaseCookie = cookieStore.get('bazar_user_session')?.value;
+  let isAuthenticated = !!firebaseCookie;
+
+  if (!isAuthenticated) {
+    try {
+      const headersList = await headers();
+      const session = await auth.api.getSession({ headers: headersList });
+      if (session) isAuthenticated = true;
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!isAuthenticated) {
     redirect(`/signin?redirect=/product/${slug}&reason=protected`);
   }
 

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { useSession, signOut } from '@/lib/auth-client';
+import { useAuth } from '@/context/AuthContext';
 import { getBanglaDate } from '@/lib/types';
 import type { Category } from '@/lib/types';
 import { ShoppingCart, LogIn, UserPlus, LogOut, User, ChevronDown, Menu, X } from 'lucide-react';
@@ -15,7 +15,7 @@ interface NavbarProps {
 
 export default function Navbar({ categories }: NavbarProps) {
   const pathname = usePathname();
-  const { data: session, isPending } = useSession();
+  const { user, loading: isPending, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [banglaDate, setBanglaDate] = useState('');
 
@@ -24,8 +24,12 @@ export default function Navbar({ categories }: NavbarProps) {
   }, []);
 
   const handleSignOut = async () => {
-    await signOut();
-    toast.success('সফলভাবে সাইন আউট হয়েছেন');
+    try {
+      await logout();
+      toast.success('সফলভাবে সাইন আউট হয়েছেন');
+    } catch {
+      toast.error('সাইন আউট ব্যর্থ হয়েছে');
+    }
   };
 
   const isActiveCategory = (slug: string) => {
@@ -52,21 +56,21 @@ export default function Navbar({ categories }: NavbarProps) {
           <div className="hidden md:flex items-center gap-2">
             {isPending ? (
               <div className="skeleton-shimmer h-9 w-32 rounded-lg" />
-            ) : session ? (
+            ) : user ? (
               <div className="flex items-center gap-2">
                 <Link
                   href="/profile"
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-green-800 hover:bg-green-50 transition-colors"
                 >
-                  {session.user.image ? (
+                  {user.photoURL ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={session.user.image} alt={session.user.name} className="w-7 h-7 rounded-full" />
+                    <img src={user.photoURL} alt={user.displayName || user.email || ''} className="w-7 h-7 rounded-full" />
                   ) : (
                     <div className="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center text-white text-sm font-bold">
-                      {session.user.name?.charAt(0).toUpperCase()}
+                      {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <span className="text-sm font-medium">{session.user.name}</span>
+                  <span className="text-sm font-medium">{user.displayName || user.email?.split('@')[0]}</span>
                 </Link>
                 <button
                   id="signout-btn"
@@ -149,7 +153,7 @@ export default function Navbar({ categories }: NavbarProps) {
             <div className="pb-3 border-b border-green-100">
               {isPending ? (
                 <div className="skeleton-shimmer h-9 w-full rounded-lg" />
-              ) : session ? (
+              ) : user ? (
                 <div className="space-y-2">
                   <Link
                     href="/profile"
@@ -157,7 +161,7 @@ export default function Navbar({ categories }: NavbarProps) {
                     className="flex items-center gap-2 px-3 py-2 rounded-lg text-green-800 hover:bg-green-50"
                   >
                     <User className="w-4 h-4" />
-                    <span>{session.user.name}</span>
+                    <span>{user.displayName || user.email?.split('@')[0]}</span>
                   </Link>
                   <button
                     onClick={() => { handleSignOut(); setMobileOpen(false); }}
