@@ -17,6 +17,7 @@ function SignInForm() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchParams.get('reason') === 'protected') {
@@ -54,6 +55,7 @@ function SignInForm() {
 
   const handleGoogleSignIn = async () => {
     try {
+      setUnauthorizedDomain(null);
       await loginWithGoogle();
       toast.success('Google দিয়ে লগইন সফল হয়েছে! 🎉');
       router.push(redirectTo);
@@ -61,7 +63,9 @@ function SignInForm() {
     } catch (err: any) {
       console.error('Google Sign-in Error:', err);
       if (err?.code === 'auth/unauthorized-domain') {
-        toast.error('Firebase Console-এ আপনার Vercel ডোমেইন Authorized Domain হিসেবে যোগ করুন', { duration: 6000 });
+        const curDomain = typeof window !== 'undefined' ? window.location.hostname : 'আপনার Vercel ডোমেইন';
+        setUnauthorizedDomain(curDomain);
+        toast.error('Firebase Console-এ আপনার Vercel ডোমেইন Authorized Domain হিসেবে যোগ করুন', { duration: 8000 });
       } else if (err?.code === 'auth/popup-blocked') {
         toast.error('ব্রাউজারের পপআপ ব্লকার বন্ধ করে আবার চেষ্টা করুন');
       } else if (err?.code !== 'auth/popup-closed-by-user') {
@@ -72,6 +76,7 @@ function SignInForm() {
 
   const handleGithubSignIn = async () => {
     try {
+      setUnauthorizedDomain(null);
       await loginWithGithub();
       toast.success('GitHub দিয়ে লগইন সফল হয়েছে! 🎉');
       router.push(redirectTo);
@@ -79,7 +84,9 @@ function SignInForm() {
     } catch (err: any) {
       console.error('GitHub Sign-in Error:', err);
       if (err?.code === 'auth/unauthorized-domain') {
-        toast.error('Firebase Console-এ আপনার Vercel ডোমেইন Authorized Domain হিসেবে যোগ করুন', { duration: 6000 });
+        const curDomain = typeof window !== 'undefined' ? window.location.hostname : 'আপনার Vercel ডোমেইন';
+        setUnauthorizedDomain(curDomain);
+        toast.error('Firebase Console-এ আপনার Vercel ডোমেইন Authorized Domain হিসেবে যোগ করুন', { duration: 8000 });
       } else if (err?.code === 'auth/popup-blocked') {
         toast.error('ব্রাউজারের পপআপ ব্লকার বন্ধ করে আবার চেষ্টা করুন');
       } else if (err?.code !== 'auth/popup-closed-by-user') {
@@ -173,6 +180,20 @@ function SignInForm() {
 
           {/* Social login buttons */}
           <div className="space-y-3 mb-6">
+            {unauthorizedDomain && (
+              <div className="p-3 mb-2 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 space-y-1">
+                <p className="font-semibold flex items-center gap-1.5">
+                  <span>⚠️</span> Firebase ডোমেইন অনুমোদিত নয়
+                </p>
+                <p>Firebase Console-এ এই ডোমেইনটি Authorized Domain হিসেবে যোগ করুন:</p>
+                <code className="block bg-white p-1.5 rounded border border-amber-200 font-mono text-xs select-all text-amber-950 font-bold">
+                  {unauthorizedDomain}
+                </code>
+                <p className="text-[11px] text-gray-500 pt-1">
+                  Firebase Console &rarr; Authentication &rarr; Settings &rarr; Authorized domains &rarr; Add domain
+                </p>
+              </div>
+            )}
             <button
               id="google-signin-btn"
               onClick={handleGoogleSignIn}

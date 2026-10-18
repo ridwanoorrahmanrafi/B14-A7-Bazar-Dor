@@ -1,7 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
-import { cookies, headers } from 'next/headers';
-import { auth } from '@/lib/auth';
-import { fetchProductBySlug, fetchCategories, calcMarketStats, formatPrice, getUnitLabel } from '@/lib/types';
+import { cookies } from 'next/headers';
+import { fetchProductBySlug, fetchCategories, calcMarketStats, formatPrice, getUnitLabel, type Category } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
@@ -16,20 +15,10 @@ interface Props {
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
 
-  // Auth check — protected route (supports Firebase auth cookie + BetterAuth session)
+  // Auth check — protected route (Firebase session cookie)
   const cookieStore = await cookies();
-  const firebaseCookie = cookieStore.get('bazar_user_session')?.value;
-  let isAuthenticated = !!firebaseCookie;
-
-  if (!isAuthenticated) {
-    try {
-      const headersList = await headers();
-      const session = await auth.api.getSession({ headers: headersList });
-      if (session) isAuthenticated = true;
-    } catch {
-      // ignore
-    }
-  }
+  const sessionCookie = cookieStore.get('bazar_user_session')?.value;
+  const isAuthenticated = !!sessionCookie;
 
   if (!isAuthenticated) {
     redirect(`/signin?redirect=/product/${slug}&reason=protected`);
@@ -43,26 +32,31 @@ export default async function ProductDetailPage({ params }: Props) {
     notFound();
   }
 
-  const categories = await fetchCategories();
-  const stats = calcMarketStats(product.markets);
+  let categories: Category[] = [];
+  try {
+    categories = await fetchCategories();
+  } catch {
+    categories = [];
+  }
+  const stats = calcMarketStats(product.markets || []);
 
   const changeColor =
-    product.change.dir === 'up'
+    product.change?.dir === 'up'
       ? 'text-red-600'
-      : product.change.dir === 'down'
+      : product.change?.dir === 'down'
       ? 'text-green-600'
       : 'text-gray-500';
 
   const ChangeIcon =
-    product.change.dir === 'up'
+    product.change?.dir === 'up'
       ? TrendingUp
-      : product.change.dir === 'down'
+      : product.change?.dir === 'down'
       ? TrendingDown
       : Minus;
 
   // Group markets by division
   const byDivision: Record<string, typeof product.markets> = {};
-  for (const m of product.markets) {
+  for (const m of product.markets || []) {
     if (!byDivision[m.division]) byDivision[m.division] = [];
     byDivision[m.division].push(m);
   }
