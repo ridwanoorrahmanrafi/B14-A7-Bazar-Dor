@@ -71,7 +71,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## 📬 Submission
 
 - **Live Link:** *(deploy and fill here)*
-- **GitHub Repository Link:** *(fill here)*
+- **GitHub Repository Link:** https://github.com/ridwanoorrahmanrafi/B14-A7-Bazar-Dor
 
 ---
 
