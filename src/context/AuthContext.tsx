@@ -29,6 +29,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function syncSessionCookie(user: User | null) {
   if (typeof document === 'undefined') return;
+  const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  const secureFlag = isHttps ? '; Secure' : '';
+
   if (user) {
     const sessionData = {
       uid: user.uid,
@@ -38,9 +41,9 @@ function syncSessionCookie(user: User | null) {
     };
     document.cookie = `bazar_user_session=${encodeURIComponent(
       JSON.stringify(sessionData)
-    )}; path=/; max-age=604800; SameSite=Lax`;
+    )}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
   } else {
-    document.cookie = 'bazar_user_session=; path=/; max-age=0; SameSite=Lax';
+    document.cookie = `bazar_user_session=; path=/; max-age=0; SameSite=Lax${secureFlag}`;
   }
 }
 

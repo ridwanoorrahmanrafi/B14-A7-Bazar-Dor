@@ -54,8 +54,13 @@ export default function SignUpPage() {
       router.push('/');
       router.refresh();
     } catch (err: any) {
-      if (err?.code !== 'auth/popup-closed-by-user') {
-        toast.error('Google লগইন ব্যর্থ হয়েছে');
+      console.error('Google Sign-in Error:', err);
+      if (err?.code === 'auth/unauthorized-domain') {
+        toast.error('Firebase Console-এ আপনার Vercel ডোমেইন Authorized Domain হিসেবে যোগ করুন', { duration: 6000 });
+      } else if (err?.code === 'auth/popup-blocked') {
+        toast.error('ব্রাউজারের পপআপ ব্লকার বন্ধ করে আবার চেষ্টা করুন');
+      } else if (err?.code !== 'auth/popup-closed-by-user') {
+        toast.error(err?.message || 'Google লগইন ব্যর্থ হয়েছে');
       }
     }
   };
@@ -67,8 +72,13 @@ export default function SignUpPage() {
       router.push('/');
       router.refresh();
     } catch (err: any) {
-      if (err?.code !== 'auth/popup-closed-by-user') {
-        toast.error('GitHub লগইন ব্যর্থ হয়েছে');
+      console.error('GitHub Sign-in Error:', err);
+      if (err?.code === 'auth/unauthorized-domain') {
+        toast.error('Firebase Console-এ আপনার Vercel ডোমেইন Authorized Domain হিসেবে যোগ করুন', { duration: 6000 });
+      } else if (err?.code === 'auth/popup-blocked') {
+        toast.error('ব্রাউজারের পপআপ ব্লকার বন্ধ করে আবার চেষ্টা করুন');
+      } else if (err?.code !== 'auth/popup-closed-by-user') {
+        toast.error(err?.message || 'GitHub লগইন ব্যর্থ হয়েছে');
       }
     }
   };
